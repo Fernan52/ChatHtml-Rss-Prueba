@@ -20,6 +20,7 @@ from langchain.llms import OpenAI
 from langchain.callbacks import get_openai_callback  
 # Importa el módulo langchain
 import langchain
+#Importa el modulo de bs4
 from bs4 import BeautifulSoup
 import time
 
@@ -31,7 +32,9 @@ load_dotenv()
 
 # Función para procesar el texto extraído de un archivo PDF
 def process_text(text):
-  start_time = time.time() #Registra el tiempo de inicio de la funcion 
+  
+  start_time = time.time() # Registra el tiempo de inicio de la función
+   
   # Divide el texto en trozos usando langchain
   text_splitter = CharacterTextSplitter(
     separator="\n",
@@ -48,32 +51,32 @@ def process_text(text):
   knowledge_base = FAISS.from_texts(chunks, embeddings)
 
   end_time = time.time()  # Registra el tiempo de finalización de la función
+  
   print(f"Tiempo de procesamiento: {end_time - start_time} segundos")  # Imprime el tiempo de procesamiento
 
   return knowledge_base
 
 # Función principal de la aplicación
 def main():
-  st.title("Preguntas a un HTML")  # Establece el título de la aplicación
+  st.title("HTML Insight - Preguntas a un HTML")  # Establece el título de la aplicación
 
-  html1 = st.file_uploader("Sube tu primer archivo HTML", type="html")  # Crea un cargador de archivos para subir el primer archivo HTML
-  html2 = st.file_uploader("Sube tu segundo archivo HTML", type="html")  # Crea un cargador de archivos para subir el segundo archivo HTML
+  html = st.file_uploader("Sube tu archivo HTML", type="html")  # Crea un cargador de archivos para subir el archivo HTML
+  rss = st.file_uploader("Sube tu archivo RSS", type="rss")  # Crea un cargador de archivos para subir el archivo RSS
 
   text = ""
 
-  for html in [html1, html2]:
-    if html is not None:
-      soup = BeautifulSoup(html, 'html.parser')
-
-      
+  for file, parser in [(html, 'html.parser'), (rss, 'xml')]:
+    if file is not None:
+      soup = BeautifulSoup(file, parser)
       # Almacena el texto del HTML en una variable
       text += soup.get_text()
-
+  if text:
+    
     # Crea un objeto de base de conocimientos a partir del texto del PDF
     knowledgeBase = process_text(text)
 
     # Caja de entrada de texto para que el usuario escriba su pregunta
-    query = st.text_input('Escribe tu pregunta para el HTML...', key='input_query')
+    query = st.text_input('Escribe tu pregunta para el HTML...')
 
     # Botón para cancelar la pregunta
     cancel_button = st.button('Cancelar')
@@ -86,7 +89,6 @@ def main():
       docs = knowledgeBase.similarity_search(query)
 
       # Inicializa un modelo de lenguaje de OpenAI y ajustamos sus parámetros
-
       model = "gpt-3.5-turbo-instruct" # Acepta 4096 tokens
       temperature = 0  # Valores entre 0 - 1
 
